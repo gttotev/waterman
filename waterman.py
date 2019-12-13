@@ -4,8 +4,8 @@ from threading import Thread
 import camera_server, logman
 from gpiozero import DigitalInputDevice, DigitalOutputDevice
 
-POLL_TIME_SEC = 10
-PUMP_TIME_SEC = 3
+POLL_TIME_SEC = 10 * 60
+PUMP_TIME_SEC = 4
 
 cam_mq = camera_server.mq
 cam_thread = Thread(target=camera_server.serve, daemon=True)
