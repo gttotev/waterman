@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Waterman</title>
+    <script>
+    function sendMsg(msg) {
+        var xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+            if (xhr.status == 250) alert(xhr.response);
+        };
+
+        xhr.open("GET", "/" + msg);
+        xhr.send();
+    }
+    </script>
+</head>
+<body>
+    <h1>Waterman</h1>
+    <a href="/log" target="_blank">LOG</a>
+    <button onclick="sendMsg('clear_log')">Clear</button>
+    <br />
+
+    <img src="stream.mjpg" width="640" height="480" />
+
+    <h3>Read</h3>
+    <button onclick="sendMsg('read=s')">SENSORS</button>
+    <button onclick="sendMsg('read=m')">PUMPS</button>
+
+    <h3>Water</h3>
+    <button onclick="sendMsg('start=*')">ALL</button>
+    <button onclick="sendMsg('start=0')">0</button>
+    <button onclick="sendMsg('start=1')">1</button>
+    <button onclick="sendMsg('start=2')">2</button>
+
+    <h3>Stop</h3>
+    <button onclick="sendMsg('stop=*')">ALL</button>
+    <button onclick="sendMsg('stop=0')">0</button>
+    <button onclick="sendMsg('stop=1')">1</button>
+    <button onclick="sendMsg('stop=2')">2</button>
+
+    <h3>Disable</h3>
+    <button onclick="sendMsg('disable=*')">ALL</button>
+    <button onclick="sendMsg('disable=0')">0</button>
+    <button onclick="sendMsg('disable=1')">1</button>
+    <button onclick="sendMsg('disable=2')">2</button>
+
+    <h3>Enable</h3>
+    <button onclick="sendMsg('enable=*')">ALL</button>
+    <button onclick="sendMsg('enable=0')">0</button>
+    <button onclick="sendMsg('enable=1')">1</button>
+    <button onclick="sendMsg('enable=2')">2</button>
+</body>
+</html>

@@ -1,42 +1,11 @@
 #!/usr/bin/env python3
 
-import io
-import picamera
-import logman
-import logging
-import socketserver
+import picamera, logman, os
+import io, logging, socketserver
 from threading import Condition
 from http import server
 
-PAGE="""\
-<html>
-<head>
-<title>picamera MJPEG streaming demo</title>
-<script>
-function sendReq(text) {
-    var oReq = new XMLHttpRequest();
-    oReq.open("GET", "/" + text);
-    oReq.send();
-}
-</script>
-</head>
-<body>
-<h1>PiCamera MJPEG Streaming Demo</h1>
-<a href="/log" target="_blank">LOG</a>
-<button onclick="sendReq('clear_log')">Clear</button>
-<br />
-<img src="stream.mjpg" width="640" height="480" />
-<h3>Water</h3>
-<button onclick="sendReq('start_pump=0')">0</button>
-<button onclick="sendReq('start_pump=1')">1</button>
-<button onclick="sendReq('start_pump=2')">2</button>
-<h3>Other actions</h3>
-<button onclick="sendReq('stop')">STOP</button>
-<button onclick="sendReq('disable')">DISABLE</button>
-<button onclick="sendReq('enable')">ENABLE</button>
-</body>
-</html>
-"""
+INDEX_PATH = os.path.join(os.path.dirname(__file__), 'index.html')
 
 class StreamingOutput(object):
     def __init__(self):
@@ -55,34 +24,22 @@ class StreamingOutput(object):
             self.buffer.seek(0)
         return self.buffer.write(buf)
 
-mq = []
-
 class StreamingHandler(server.BaseHTTPRequestHandler):
-    output = None
+    output = StreamingOutput()
+    other_handler = lambda cls, path: None
+
     def do_GET(self):
         if self.path == '/':
             self.send_response(301)
             self.send_header('Location', '/index.html')
             self.end_headers()
-        elif self.path == '/log':
-            with open(logman.LOG_PATH) as logfile:
-                self.send_response(200)
-                self.send_header('Content-Type', 'text/plain')
-                self.end_headers()
-                self.wfile.write(logfile.read().encode())
-        elif self.path == '/clear_log':
-            logman.clear_log()
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/plain')
-            self.end_headers()
-            self.wfile.write(b'OK\r\n')
         elif self.path == '/index.html':
-            content = PAGE.encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
-            self.send_header('Content-Length', len(content))
             self.end_headers()
-            self.wfile.write(content)
+            with open(INDEX_PATH) as f:
+                self.wfile.write(f.read().encode())
+
         elif self.path == '/stream.mjpg':
             self.send_response(200)
             self.send_header('Age', 0)
@@ -105,25 +62,34 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 logging.warning(
                     'Removed streaming client %s: %s',
                     self.client_address, str(e))
-        else:
-            global mq
-            mq.append(self.path[1:])
+
+        elif self.path == '/log':
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(logman.dump().encode())
+        elif self.path == '/clear_log':
+            logman.clear_log()
             self.send_response(200)
             self.send_header('Content-Type', 'text/plain')
             self.end_headers()
             self.wfile.write(b'OK\r\n')
 
+        else:
+            res = self.other_handler(self.path)
+            self.send_response(res[0])
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(res[1].encode())
+
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
 
-def serve():
-    #with picamera.PiCamera(resolution='640x480', framerate=24) as camera:
+def serve(other_handler=lambda cls, x: None):
     with picamera.PiCamera(resolution='1296x972', framerate=30) as camera:
-    #with picamera.PiCamera(resolution='2592x1944', framerate=15) as camera:
-        output = StreamingOutput()
-        StreamingHandler.output = output
-        camera.start_recording(output, format='mjpeg')
+        StreamingHandler.other_handler = other_handler
+        camera.start_recording(StreamingHandler.output, format='mjpeg')
         try:
             address = ('', 8000)
             server = StreamingServer(address, StreamingHandler)

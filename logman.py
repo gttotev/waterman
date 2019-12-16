@@ -1,11 +1,16 @@
 import time
 
-LOG_PATH = './log.txt'
+LOGFILE_PATH = '/tmp/waterman-log.txt'
 
-def log(text):
+def log(*args):
+    text = time.ctime() + ' -- ' + ' '.join([str(e) for e in args])
     print(text)
-    with open(LOG_PATH, 'a') as fout:
-        fout.write(time.ctime() + ' -- ' + text + '\n')
+    with open(LOGFILE_PATH, 'a') as fout:
+        fout.write(text + '\n')
 
 def clear_log():
-    open(LOG_PATH, 'w').close()
+    open(LOGFILE_PATH, 'w').close()
+
+def dump():
+    with open(LOGFILE_PATH) as f:
+        return f.read()
