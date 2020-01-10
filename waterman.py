@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import time
+import time, os.path
 from threading import Thread
 import camera_server, logman
 from gpiozero import DigitalInputDevice, DigitalOutputDevice
@@ -7,8 +7,8 @@ from gpiozero import DigitalInputDevice, DigitalOutputDevice
 POLL_TIME_SEC = 10 * 60
 PUMP_TIME_SEC = 4
 PUMP_BYPASS_HOUR = 20
-#PUMP_TIMEOUT_SEC = 23 * 3600 * 1000
-PUMP_TIMEOUT_SEC = 5
+PUMP_TIMEOUT_SEC = 23 * 3600 * 1000
+PUMP_LAST_SAVEFILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pump_last.txt')
 
 in_pins = [18, 23, 24]
 sensors = [DigitalInputDevice(p) for p in in_pins]
@@ -18,6 +18,12 @@ out_pins = [17, 27, 22]
 pumps = [DigitalOutputDevice(p, active_high=False) for p in out_pins]
 pump_auto = [True for m in pumps]
 pump_last = [0 for m in pumps]
+if os.path.isfile(PUMP_LAST_SAVEFILE):
+    with open(PUMP_LAST_SAVEFILE) as times:
+        i = 0
+        for t in times:
+            pump_last[i] = float(t[:-1])
+            i += 1
 
 def run_pump(i, interval=PUMP_TIME_SEC):
     m = pumps[i]
@@ -80,6 +86,9 @@ def auto_pumper(interval=POLL_TIME_SEC):
                     or not sensor_bypass[i] and sensors[i].value)):
                 pump_last[i] = now
                 Thread(target=run_pump, args=(i,), daemon=True).start()
+        with open(PUMP_LAST_SAVEFILE, 'w') as fout:
+            for t in pump_last:
+                fout.write(str(t) + '\n')
 
 if __name__ == '__main__':
     auto_thread = Thread(target=auto_pumper, daemon=True)
