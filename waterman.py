@@ -7,7 +7,7 @@ from gpiozero import DigitalInputDevice, DigitalOutputDevice
 POLL_TIME_SEC = 10 * 60
 PUMP_TIME_SEC = 4
 PUMP_BYPASS_HOUR = 20
-PUMP_TIMEOUT_SEC = 23 * 3600 * 1000
+PUMP_TIMEOUT_SEC = 23 * 3600
 PUMP_LAST_SAVEFILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pump_last.txt')
 
 in_pins = [18, 23, 24]
